@@ -1,4 +1,4 @@
-# mtTkinter
+# mtTkinter [![PyPI version](https://badge.fury.io/py/mttkinter.svg)](https://badge.fury.io/py/mttkinter)
 #### A wrapper around Tkinter for multi-threading by Allen B. Taylor
 
 This is the mtTkinter module written by Allen B. Taylor, originally published [here](http://tkinter.unpythonic.net/wiki/mtTkinter). 
