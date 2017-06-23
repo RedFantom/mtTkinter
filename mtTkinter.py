@@ -62,7 +62,7 @@ class _Tk(object):
     Wrapper for underlying attribute tk of class Tk.
     """
 
-    def __init__(self, tk, mtDebug = 0, mtCheckPeriod = 10):
+    def __init__(self, tk, mtDebug = 0, mtCheckPeriod = 10, mtIgnoreCallsFromForeignThreads = False):
         self._tk = tk
 
         # Create the incoming event queue.
@@ -75,6 +75,7 @@ class _Tk(object):
         # Store remaining values.
         self._debug = mtDebug
         self._checkPeriod = mtCheckPeriod
+        self._ignoreCallsFromForeignThreads = mtIgnoreCallsFromForeignThreads
 
     def __getattr__(self, name):
         # Divert attribute accesses to a wrapper around the underlying tk
@@ -107,27 +108,28 @@ class _TkAttr(object):
                     self._attr.__name__, args, kwargs
             return self._attr(*args, **kwargs)
         else:
-            # We're in a different thread than the creation thread; enqueue
-            # the event, and then wait for the response.
-            responseQueue = Queue.Queue(1)
-            if self._tk._debug >= 1:
-                print 'Marshalling event:', self._attr.__name__, args, kwargs
-            self._tk._eventQueue.put((self._attr, args, kwargs, responseQueue))
-            isException, response = responseQueue.get()
-
-            # Handle the response, whether it's a normal return value or
-            # an exception.
-            if isException:
-                exType, exValue, exTb = response
-                raise exType, exValue, exTb
-            else:
-                return response
+            if not self._tk._ignoreCallsFromForeignThreads:
+                # We're in a different thread than the creation thread; enqueue
+                # the event, and then wait for the response.
+                responseQueue = Queue.Queue(1)
+                if self._tk._debug >= 1:
+                    print 'Marshalling event:', self._attr.__name__, args, kwargs
+                self._tk._eventQueue.put((self._attr, args, kwargs, responseQueue))
+                isException, response = responseQueue.get()
+                
+                # Handle the response, whether it's a normal return value or
+                # an exception.
+                if isException:
+                    exType, exValue, exTb = response
+                    raise exType, exValue, exTb
+                else:
+                    return response
 
 # Define a hook for class Tk's __init__ method.
 def _Tk__init__(self, *args, **kwargs):
     # We support some new keyword arguments that the original __init__ method
     # doesn't expect, so separate those out before doing anything else.
-    new_kwnames = ('mtCheckPeriod', 'mtDebug')
+    new_kwnames = ('mtCheckPeriod', 'mtDebug', 'mtIgnoreCallsFromForeignThreads')
     new_kwargs = {}
     for name, value in kwargs.items():
         if name in new_kwnames:
