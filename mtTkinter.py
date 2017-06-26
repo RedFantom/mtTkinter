@@ -62,7 +62,7 @@ class _Tk(object):
     Wrapper for underlying attribute tk of class Tk.
     """
 
-    def __init__(self, tk, mtDebug = 0, mtCheckPeriod = 10, mtIgnoreCallsFromForeignThreads = False):
+    def __init__(self, tk, mtDebug = 0, mtCheckPeriod = 10):
         self._tk = tk
 
         # Create the incoming event queue.
@@ -75,7 +75,7 @@ class _Tk(object):
         # Store remaining values.
         self._debug = mtDebug
         self._checkPeriod = mtCheckPeriod
-        self._ignoreCallsFromForeignThreads = mtIgnoreCallsFromForeignThreads
+        self._destroying = False
 
     def __getattr__(self, name):
         # Divert attribute accesses to a wrapper around the underlying tk
@@ -108,14 +108,14 @@ class _TkAttr(object):
                     self._attr.__name__, args, kwargs
             return self._attr(*args, **kwargs)
         else:
-            if not self._tk._ignoreCallsFromForeignThreads:
+            if not self._tk._destroying:
                 # We're in a different thread than the creation thread; enqueue
                 # the event, and then wait for the response.
                 responseQueue = Queue.Queue(1)
                 if self._tk._debug >= 1:
                     print 'Marshalling event:', self._attr.__name__, args, kwargs
-                self._tk._eventQueue.put((self._attr, args, kwargs, responseQueue))
-                isException, response = responseQueue.get()
+                self._tk._eventQueue.put((self._attr, args, kwargs, responseQueue), True, 1)
+                isException, response = responseQueue.get(True, 1)
                 
                 # Handle the response, whether it's a normal return value or
                 # an exception.
@@ -129,7 +129,7 @@ class _TkAttr(object):
 def _Tk__init__(self, *args, **kwargs):
     # We support some new keyword arguments that the original __init__ method
     # doesn't expect, so separate those out before doing anything else.
-    new_kwnames = ('mtCheckPeriod', 'mtDebug', 'mtIgnoreCallsFromForeignThreads')
+    new_kwnames = ('mtCheckPeriod', 'mtDebug')
     new_kwargs = {}
     for name, value in kwargs.items():
         if name in new_kwnames:
@@ -146,9 +146,18 @@ def _Tk__init__(self, *args, **kwargs):
     # Set up the first event to check for out-of-thread events.
     self.after_idle(_CheckEvents, self)
 
+# Define a hook for class Tk's destroy method.
+def _Tk_destroy(self):
+    self.tk._destroying = True
+    self.__original__destroy()
+    
 # Replace Tk's original __init__ with the hook.
 Tk.__original__init__mtTkinter = Tk.__init__
 Tk.__init__ = _Tk__init__
+
+# Replace Tk's original destroy with the hook.
+Tk.__original__destroy = Tk.destroy
+Tk.destroy = _Tk_destroy
 
 def _CheckEvents(tk):
     "Event checker event."
