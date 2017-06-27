@@ -1,0 +1,2 @@
+recursive-include *.md
+include mttkinter LICENSE
