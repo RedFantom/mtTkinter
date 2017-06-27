@@ -1,2 +1,2 @@
-recursive-include *.md
-include mttkinter LICENSE
+include mttkinter/AUTHORS.md
+include mttkinter/LICENSE
