@@ -30,7 +30,7 @@ class TestMTTkinter(TestCase):
         self.assertNotEqual(orig_destroy, id(tk.Tk.destroy))
         self.assertTrue(hasattr(tk.Tk(), "_tk"))
 
-    def test_threading(self):
+    def test_threading_normal(self):
         """
         Test running commands on a window in another thread. This is
         *not* a fool-proof test. Threading issues in Tkinter are
@@ -39,18 +39,41 @@ class TestMTTkinter(TestCase):
         from mttkinter import mtTkinter
         root = tk.Tk()
         queue = Queue(1)
-        root.after(1000, lambda: DummyThread(root, queue).start())
+        root.after(1000, lambda: DummyThread(root, queue, 1).start())
+        while queue.empty():
+            root.update()
+        # If exit with 0, then clearly the test succeeded
+
+    def test_threading_exception(self):
+        """
+        Test running a command that will raise an error in a Thread to
+        test exception handling.
+        """
+        from mttkinter import mtTkinter
+        root = tk.Tk()
+        queue = Queue(1)
+        root.after(1000, lambda: DummyThread(root, queue, 2).start())
         while queue.empty():
             root.update()
         # If exit with 0, then clearly the test succeeded
 
 
 class DummyThread(threading.Thread):
-    def __init__(self, root, queue):
+    def __init__(self, root, queue, mode):
         threading.Thread.__init__(self)
         self.root = root
         self.queue = queue
+        self.mode = mode
 
     def run(self):
-        tk.Button(self.root).pack()
-        self.queue.put(True)
+        if self.mode == 1:  # Normal
+            tk.Button(self.root, background="blue").pack()
+            self.queue.put(True)
+        elif self.mode == 2:  # Error:
+            try:
+                tk.Button(self.root, background="nonexistent").pack()
+            except tk.TclError:
+                self.queue.put(True)
+                return True
+            self.queue.put(True)
+            raise ValueError("Exception not correctly raised.")
