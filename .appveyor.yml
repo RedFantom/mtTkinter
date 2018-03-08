@@ -9,6 +9,6 @@ install:
   - "%PYTHON%\\python.exe -m pip install codecov coverage nose "
 test_script:
   - "%PYTHON%\\python.exe -m pip install ."
-  - "%PYTHON%\\python.exe -m nose --with-coverage"
+  - "%PYTHON%\\python.exe -m nose --with-coverage --cover-xml --cover-package=mttkinter"
 after_test:
-  - "%PYTHON%\\Scripts\\codecov.exe"
+  - "%PYTHON%\\Scripts\\codecov.exe -f C:\\projects\\mtTkinter\\coverage.xml"

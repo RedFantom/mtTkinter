@@ -14,6 +14,6 @@ install:
   - sudo -H python -m pip install nose coverage codecov
   - sudo -H python setup.py sdist install
 script:
-  - python -m nose --with-coverage
+  - python -m nose --with-coverage --cover-xml --cover-package=mttkinter
 after_success:
-  - codecov
+  - codecov -f coverage.xml

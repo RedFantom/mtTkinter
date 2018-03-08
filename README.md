@@ -1,4 +1,11 @@
-# mtTkinter [![PyPI version](https://badge.fury.io/py/mttkinter.svg)](https://badge.fury.io/py/mttkinter)
+# mtTkinter 
+[![Build status](https://ci.appveyor.com/api/projects/status/4r9796lwmrx2s2mx?svg=true)](https://ci.appveyor.com/project/RedFantom/mttkinter)
+[![Build Status](https://travis-ci.org/RedFantom/mtTkinter.svg?branch=master)](https://travis-ci.org/RedFantom/mtTkinter)
+[![codecov](https://codecov.io/gh/RedFantom/mtTkinter/branch/master/graph/badge.svg)](https://codecov.io/gh/RedFantom/mtTkinter)
+[![PyPI version](https://badge.fury.io/py/mttkinter.svg)](https://badge.fury.io/py/mttkinter)
+[![License: GPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
+
+
 #### A wrapper around Tkinter for multi-threading by Allen B. Taylor
 
 This is the mtTkinter module written by Allen B. Taylor, originally published [here](http://tkinter.unpythonic.net/wiki/mtTkinter). 
