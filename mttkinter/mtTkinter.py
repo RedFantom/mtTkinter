@@ -1,6 +1,9 @@
-'''Thread-safe version of Tkinter.
+"""
+Thread-safe version of Tkinter
 
 Copyright (c) 2009, Allen B. Taylor
+Copyright (c) 2017, baldk
+Copyright (c) 2018, RedFantom
 
 This module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser Public License as published by
@@ -32,60 +35,77 @@ the call is issued from a thread other than the thread in which the Tk
 instance was created. The events are processed in the creation thread
 via an 'after' event.
 
-The modified Tk class accepts two additional keyword parameters on its
-__init__ method:
-    mtDebug:
-        0 = No debug output (default)
-        1 = Minimal debug output
-        ...
-        9 = Full debug output
-    mtCheckPeriod:
-        Amount of time in milliseconds (default 100) between checks for
-        out-of-thread events when things are otherwise idle. Decreasing
-        this value can improve GUI responsiveness, but at the expense of
-        consuming more CPU cycles.
-
 Note that, because it modifies the original Tkinter module (in memory),
 other modules that use Tkinter (e.g., Pmw) reap the benefits automagically
 as long as mtTkinter is imported at some point before extra threads are
 created.
 
-Author: Allen B. Taylor, a.b.taylor@gmail.com
-'''
+Authors:
+Allen B. Taylor, a.b.taylor@gmail.com
+RedFantom, redfantom@outlook.com
+baldk, baldk@users.noreply.github.com
 
-from Tkinter import *
+Docstrings and line-comments wrapped to 80 characters, code wrapped to
+100 characters.
+"""
+import sys
 import threading
-import Queue
+if sys.version_info[0] == 2:
+    # Python 2
+    from Tkinter import *
+    import Queue as queue
+else:
+    # Python 3
+    from tkinter import *
+    import queue
+
 
 class _Tk(object):
-    """
-    Wrapper for underlying attribute tk of class Tk.
-    """
+    """Wrapper for underlying attribute tk of class Tk"""
 
-    def __init__(self, tk, mtDebug = 0, mtCheckPeriod = 10):
+    def __init__(self, tk, mt_debug=0, mt_check_period=10):
+        """
+        :param tk: Tkinter.Tk.tk Tk interpreter object
+        :param mt_debug: Determines amount of debug output.
+            0 = No debug output (default)
+            1 = Minimal debug output
+            ...
+            9 = Full debug output
+        :param mt_check_period: Amount of time in milliseconds (default
+            10) between checks for out-of-thread events when things are
+            otherwise idle. Decreasing this value can improve GUI
+            responsiveness, but at the expense of consuming more CPU
+            cycles.
+
+        # TODO: Replace custom logging functionality with standard
+        # TODO: logging.Logger for easier access and standardization
+        """
         self._tk = tk
 
-        # Create the incoming event queue.
-        self._eventQueue = Queue.Queue(1)
+        # Create the incoming event queue
+        self._event_queue = queue.Queue(1)
 
-        # Identify the thread from which this object is being created so we can
-        # tell later whether an event is coming from another thread.
-        self._creationThread = threading.currentThread()
+        # Identify the thread from which this object is being created
+        # so we can tell later whether an event is coming from another
+        # thread.
+        self._creation_thread = threading.current_thread()
 
-        # Store remaining values.
-        self._debug = mtDebug
-        self._checkPeriod = mtCheckPeriod
+        # Create attributes for kwargs
+        self._debug = mt_debug
+        self._check_period = mt_check_period
+        # Destroying flag to be set by the .destroy() hook
         self._destroying = False
 
     def __getattr__(self, name):
-        # Divert attribute accesses to a wrapper around the underlying tk
-        # object.
+        """
+        Diverts attribute accesses to a wrapper around the underlying tk
+        object.
+        """
         return _TkAttr(self, getattr(self._tk, name))
 
+
 class _TkAttr(object):
-    """
-    Thread-safe callable attribute wrapper.
-    """
+    """Thread-safe callable attribute wrapper"""
 
     def __init__(self, tk, attr):
         self._tk = tk
@@ -93,48 +113,50 @@ class _TkAttr(object):
 
     def __call__(self, *args, **kwargs):
         """
-        Thread-safe method invocation.
-        Diverts out-of-thread calls through the event queue.
-        Forwards all other method calls to the underlying tk object directly.
+        Thread-safe method invocation. Diverts out-of-thread calls
+        through the event queue. Forwards all other method calls to the
+        underlying tk object directly.
         """
 
-        # Check if we're in the creation thread.
-        if threading.currentThread() == self._tk._creationThread:
-            # We're in the creation thread; just call the event directly.
+        # Check if we're in the creation thread
+        if threading.current_thread() == self._tk._creation_thread:
+            # We're in the creation thread; just call the event directly
             if self._tk._debug >= 8 or \
-               self._tk._debug >= 3 and self._attr.__name__ == 'call' and \
-               len(args) >= 1 and args[0] == 'after':
-                print 'Calling event directly:', \
-                    self._attr.__name__, args, kwargs
+                    self._tk._debug >= 3 and self._attr.__name__ == 'call' and \
+                    len(args) >= 1 and args[0] == 'after':
+                print('Calling event directly:', self._attr.__name__, args, kwargs)
             return self._attr(*args, **kwargs)
         else:
             if not self._tk._destroying:
-                # We're in a different thread than the creation thread; enqueue
-                # the event, and then wait for the response.
-                responseQueue = Queue.Queue(1)
+                # We're in a different thread than the creation thread;
+                # enqueue the event, and then wait for the response.
+                response_queue = queue.Queue(1)
                 if self._tk._debug >= 1:
-                    print 'Marshalling event:', self._attr.__name__, args, kwargs
-                self._tk._eventQueue.put((self._attr, args, kwargs, responseQueue), True, 1)
-                isException, response = responseQueue.get(True, 1)
-                
+                    print('Marshalling event:', self._attr.__name__, args, kwargs)
+                self._tk._event_queue.put((self._attr, args, kwargs, response_queue), True, 1)
+                is_exception, response = response_queue.get(True, None)
+
                 # Handle the response, whether it's a normal return value or
                 # an exception.
-                if isException:
-                    exType, exValue, exTb = response
-                    raise exType, exValue, exTb
-                else:
-                    return response
+                if is_exception:
+                    ex_type, ex_value, ex_tb = response
+                    raise ex_type(ex_value, ex_tb)
+                return response_queue
 
-# Define a hook for class Tk's __init__ method.
+
 def _Tk__init__(self, *args, **kwargs):
+    """
+    Hook for Tkinter.Tk.__init__ method
+    :param self: Tk instance
+    :param args, kwargs: Arguments for Tk initializer
+    """
     # We support some new keyword arguments that the original __init__ method
     # doesn't expect, so separate those out before doing anything else.
-    new_kwnames = ('mtCheckPeriod', 'mtDebug')
-    new_kwargs = {}
-    for name, value in kwargs.items():
-        if name in new_kwnames:
-            new_kwargs[name] = value
-            del kwargs[name]
+    new_kwnames = ('mt_check_period', 'mt_debug')
+    new_kwargs = {
+        kw_name: kwargs.pop(kw_name) for kw_name in new_kwnames
+        if kwargs.get(kw_name, None) is not None
+    }
 
     # Call the original __init__ method, creating the internal tk member.
     self.__original__init__mtTkinter(*args, **kwargs)
@@ -144,23 +166,17 @@ def _Tk__init__(self, *args, **kwargs):
     self.tk = _Tk(self.tk, **new_kwargs)
 
     # Set up the first event to check for out-of-thread events.
-    self.after_idle(_CheckEvents, self)
+    self.after_idle(_check_events, self)
+
 
 # Define a hook for class Tk's destroy method.
 def _Tk_destroy(self):
     self.tk._destroying = True
     self.__original__destroy()
-    
-# Replace Tk's original __init__ with the hook.
-Tk.__original__init__mtTkinter = Tk.__init__
-Tk.__init__ = _Tk__init__
 
-# Replace Tk's original destroy with the hook.
-Tk.__original__destroy = Tk.destroy
-Tk.destroy = _Tk_destroy
 
-def _CheckEvents(tk):
-    "Event checker event."
+def _check_events(tk):
+    """Checks events in the queue on a given Tk instance"""
 
     used = False
     try:
@@ -168,9 +184,8 @@ def _CheckEvents(tk):
         while True:
             try:
                 # Get an event request from the queue.
-                method, args, kwargs, responseQueue = \
-                    tk.tk._eventQueue.get_nowait()
-            except:
+                method, args, kwargs, response_queue = tk.tk._event_queue.get_nowait()
+            except queue.Empty:
                 # No more events to process.
                 break
             else:
@@ -178,76 +193,32 @@ def _CheckEvents(tk):
                 # the result back to the caller via the response queue.
                 used = True
                 if tk.tk._debug >= 2:
-                    print 'Calling event from main thread:', \
-                        method.__name__, args, kwargs
+                    print('Calling event from main thread:', method.__name__, args, kwargs)
                 try:
-                    responseQueue.put((False, method(*args, **kwargs)))
-                except SystemExit, ex:
-                    raise SystemExit, ex
-                except Exception, ex:
+                    response_queue.put((False, method(*args, **kwargs)))
+                except SystemExit:
+                    raise  # Raises original SystemExit
+                except Exception:
                     # Calling the event caused an exception; return the
                     # exception back to the caller so that it can be raised
                     # in the caller's thread.
-                    from sys import exc_info
-                    exType, exValue, exTb = exc_info()
-                    responseQueue.put((True, (exType, exValue, exTb)))
+                    from sys import exc_info  # Python 2 requirement
+                    ex_type, ex_value, ex_tb = exc_info()
+                    response_queue.put((True, (ex_type, ex_value, ex_tb)))
     finally:
         # Schedule to check again. If we just processed an event, check
         # immediately; if we didn't, check later.
         if used:
-            tk.after_idle(_CheckEvents, tk)
+            tk.after_idle(_check_events, tk)
         else:
-            tk.after(tk.tk._checkPeriod, _CheckEvents, tk)
+            tk.after(tk.tk._check_period, _check_events, tk)
 
-# Test thread entry point.
-def _testThread(root):
-    text = "This is Tcl/Tk version %s" % TclVersion
-    if TclVersion >= 8.1:
-        try:
-            text = text + unicode("\nThis should be a cedilla: \347",
-                                  "iso-8859-1")
-        except NameError:
-            pass # no unicode support
-    try:
-        if root.globalgetvar('tcl_platform(threaded)'):
-            text = text + "\nTcl is built with thread support"
-        else:
-            raise RuntimeError
-    except:
-        text = text + "\nTcl is NOT built with thread support"
-    text = text + "\nmtTkinter works with or without Tcl thread support"
-    label = Label(root, text=text)
-    label.pack()
-    button = Button(root, text="Click me!",
-              command=lambda root=root: root.button.configure(
-                  text="[%s]" % root.button['text']))
-    button.pack()
-    root.button = button
-    quit = Button(root, text="QUIT", command=root.destroy)
-    quit.pack()
-    # The following three commands are needed so the window pops
-    # up on top on Windows...
-    root.iconify()
-    root.update()
-    root.deiconify()
-    # Simulate button presses...
-    button.invoke()
-    root.after(1000, _pressOk, root, button)
 
-# Test button continuous press event.
-def _pressOk(root, button):
-    button.invoke()
-    try:
-        root.after(1000, _pressOk, root, button)
-    except:
-        pass # Likely we're exiting
+"""Perform in-memory modification of Tkinter module"""
+# Replace Tk's original __init__ with the hook.
+Tk.__original__init__mtTkinter = Tk.__init__
+Tk.__init__ = _Tk__init__
 
-# Test. Mostly borrowed from the Tkinter module, but the important bits moved
-# into a separate thread.
-if __name__ == '__main__':
-    import threading
-    root = Tk(mtDebug = 1)
-    thread = threading.Thread(target = _testThread, args=(root,))
-    thread.start()
-    root.mainloop()
-    thread.join()
+# Replace Tk's original destroy with the hook.
+Tk.__original__destroy = Tk.destroy
+Tk.destroy = _Tk_destroy

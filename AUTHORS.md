@@ -18,4 +18,5 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ```
 
 Authors that have contributed to this module:
+- [RedFantom](https://github.com/RedFantom)
 - [baldk](https://github.com/baldk)

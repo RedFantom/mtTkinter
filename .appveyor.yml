@@ -1,0 +1,14 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\PYTHON27"
+    - PYTHON: "C:\\PYTHON34"
+    - PYTHON: "C:\\PYTHON35"
+    - PYTHON: "C:\\PYTHON36"
+build: off
+install:
+  - "%PYTHON%\\python.exe -m pip install codecov coverage nose "
+test_script:
+  - "%PYTHON%\\python.exe -m pip install ."
+  - "%PYTHON%\\python.exe -m nose --with-coverage --cover-xml --cover-package=mttkinter"
+after_test:
+  - "%PYTHON%\\Scripts\\codecov.exe -f C:\\projects\\mtTkinter\\coverage.xml"
