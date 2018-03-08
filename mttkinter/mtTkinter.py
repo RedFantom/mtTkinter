@@ -214,12 +214,11 @@ def _check_events(tk):
             tk.after(tk.tk._check_period, _check_events, tk)
 
 
-if Tk.__init__ is not _Tk__init__:
-    """Perform in-memory modification of Tkinter module"""
-    # Replace Tk's original __init__ with the hook.
-    Tk.__original__init__mtTkinter = Tk.__init__
-    Tk.__init__ = _Tk__init__
+"""Perform in-memory modification of Tkinter module"""
+# Replace Tk's original __init__ with the hook.
+Tk.__original__init__mtTkinter = Tk.__init__
+Tk.__init__ = _Tk__init__
 
-    # Replace Tk's original destroy with the hook.
-    Tk.__original__destroy = Tk.destroy
-    Tk.destroy = _Tk_destroy
+# Replace Tk's original destroy with the hook.
+Tk.__original__destroy = Tk.destroy
+Tk.destroy = _Tk_destroy

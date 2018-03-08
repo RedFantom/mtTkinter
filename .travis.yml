@@ -4,13 +4,16 @@ python:
     - "2.7"
     - "3.4"
     - "3.5"
-    - "3.5"
+    - "3.6"
 before_install:
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
   - sleep 3
 install:
   - sudo apt-get install python3-tk python-tk
+  - sudo -H python -m pip install nose coverage codecov
   - sudo -H python setup.py sdist install
 script:
-  - python -m nose
+  - python -m nose --with-coverage
+after_success:
+  - codecov

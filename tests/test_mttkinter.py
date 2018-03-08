@@ -26,8 +26,8 @@ class TestMTTkinter(TestCase):
         orig_init = tk.Tk.__init__
         orig_destroy = tk.Tk.destroy
         from mttkinter import mtTkinter
-        self.assertNotEqual(orig_init, tk.Tk.__init__)
-        self.assertNotEqual(orig_destroy, tk.Tk.destroy)
+        self.assertNotEqual(orig_init, id(tk.Tk.__init__))
+        self.assertNotEqual(orig_destroy, id(tk.Tk.destroy))
         self.assertTrue(hasattr(tk.Tk(), "_tk"))
 
     def test_threading(self):
