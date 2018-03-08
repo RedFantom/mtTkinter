@@ -134,12 +134,12 @@ class _TkAttr(object):
                 if self._tk._debug >= 1:
                     print('Marshalling event:', self._attr.__name__, args, kwargs)
                 self._tk._event_queue.put((self._attr, args, kwargs, response_queue), True, 1)
-                is_exception, response_queue = response_queue.get(True, 1)
+                is_exception, response = response_queue.get(True, None)
 
                 # Handle the response, whether it's a normal return value or
                 # an exception.
                 if is_exception:
-                    ex_type, ex_value, ex_tb = response_queue
+                    ex_type, ex_value, ex_tb = response
                     raise ex_type(ex_value, ex_tb)
                 return response_queue
 
@@ -223,63 +223,3 @@ if Tk.__init__ is not _Tk__init__:
     # Replace Tk's original destroy with the hook.
     Tk.__original__destroy = Tk.destroy
     Tk.destroy = _Tk_destroy
-
-
-# TODO: Build unittest.TestCase to test the module's functionality
-"""
-# Test thread entry point.
-def _testThread(root):
-    text = "This is Tcl/Tk version %s" % TclVersion
-    if TclVersion >= 8.1:
-        try:
-            text = text + unicode("\nThis should be a cedilla: \347",
-                                  "iso-8859-1")
-        except NameError:
-            pass  # no unicode support
-    try:
-        if root.globalgetvar('tcl_platform(threaded)'):
-            text = text + "\nTcl is built with thread support"
-        else:
-            raise RuntimeError
-    except:
-        text = text + "\nTcl is NOT built with thread support"
-    text = text + "\nmtTkinter works with or without Tcl thread support"
-    label = Label(root, text=text)
-    label.pack()
-    button = Button(root, text="Click me!",
-                    command=lambda root=root: root.button.configure(
-                        text="[%s]" % root.button['text']))
-    button.pack()
-    root.button = button
-    quit = Button(root, text="QUIT", command=root.destroy)
-    quit.pack()
-    # The following three commands are needed so the window pops
-    # up on top on Windows...
-    root.iconify()
-    root.update()
-    root.deiconify()
-    # Simulate button presses...
-    button.invoke()
-    root.after(1000, _pressOk, root, button)
-
-
-# Test button continuous press event.
-def _pressOk(root, button):
-    button.invoke()
-    try:
-        root.after(1000, _pressOk, root, button)
-    except:
-        pass  # Likely we're exiting
-
-
-# Test. Mostly borrowed from the Tkinter module, but the important bits moved
-# into a separate thread.
-if __name__ == '__main__':
-    import threading
-
-    root = Tk(mtDebug=1)
-    thread = threading.Thread(target=_testThread, args=(root,))
-    thread.start()
-    root.mainloop()
-    thread.join()
-"""
