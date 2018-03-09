@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='mttkinter',
     packages=['mttkinter'],
-    version='0.6.0',
+    version='0.6.1',
     description='A thread-safe wrapper around Tkinter for Python',
     author='mtTkinter authors',
     author_email='redfantom@outlook.com',

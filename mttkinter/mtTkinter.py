@@ -141,7 +141,7 @@ class _TkAttr(object):
                 if is_exception:
                     ex_type, ex_value, ex_tb = response
                     raise ex_type(ex_value, ex_tb)
-                return response_queue
+                return response
 
 
 def _Tk__init__(self, *args, **kwargs):

@@ -37,11 +37,12 @@ class TestMTTkinter(TestCase):
         complicated, and usually not easily reproducible.
         """
         from mttkinter import mtTkinter
-        root = tk.Tk()
-        queue = Queue(1)
-        root.after(1000, lambda: DummyThread(root, queue, 1).start())
-        while queue.empty():
-            root.update()
+        for mode in (1, 3):
+            root = tk.Tk()
+            queue = Queue(1)
+            root.after(1000, lambda: DummyThread(root, queue, mode).start())
+            while queue.empty():
+                root.update()
         # If exit with 0, then clearly the test succeeded
 
     def test_threading_exception(self):
@@ -77,3 +78,6 @@ class DummyThread(threading.Thread):
                 return True
             self.queue.put(True)
             raise ValueError("Exception not correctly raised.")
+        elif self.mode == 3:
+            tk.BooleanVar(self.root)
+            self.queue.put(True)
