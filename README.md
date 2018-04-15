@@ -13,6 +13,12 @@ This module was originally created to fix problems in a program that was not thr
 own programs as well. This GitHub repository is available for those who want to fork the code, but mostly I just created it to
 get the module on PyPI. Publishing the module on PyPI was [suggested](http://grokbase.com/t/python/python-list/08aq5e9gp6/proposal-for-thread-safe-tkinter) quite a while ago.
 
+### Purpose
+This module creates a work-around for a long-standing bug. Thanks to @native-api, who thoroughly researched the issues when
+combining multi-threading with Tkinter, it is now clear what versions of Python are affected. If you want to read more about it,
+please read the conclusion in [issue #5](https://github.com/RedFantom/mtTkinter/issues/5), but the gist is that this module is 
+only effective for Python 2.7.14 and lower.
+
 ### Installation
 You can install mtTkinter by copying it directly into your project folder, install it Python-installation wide by copying the
 `mtTkinter.py` file into `%PYTHONDIR%/Libs/lib-tk/mtTkinter.py` or you could use `pip install mttkinter`, a method for which this
