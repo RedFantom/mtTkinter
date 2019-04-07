@@ -31,7 +31,7 @@ def _test_thread(root):
                         text="[%s]" % root.button['text']))
     button.pack()
     root.button = button
-    quit = Button(root, text="QUIT", command=root.destroy)
+    quit = Button(root, text="QUIT", command=root.quit)
     quit.pack()
     # The following three commands are needed so the window pops
     # up on top on Windows...

@@ -175,6 +175,12 @@ def _Tk_destroy(self):
     self.__original__destroy()
 
 
+# Define a hook for a class Tk's quit method.
+def _Tk_quit(self):
+    self.tk._destroying = True
+    self.__original__quit()
+
+
 def _check_events(tk):
     """Checks events in the queue on a given Tk instance"""
 
@@ -222,3 +228,8 @@ Tk.__init__ = _Tk__init__
 # Replace Tk's original destroy with the hook.
 Tk.__original__destroy = Tk.destroy
 Tk.destroy = _Tk_destroy
+
+# Replace Tk's original quit with the hook.
+Tk.__original__quit = Tk.quit
+Tk.quit = _Tk_quit
+
